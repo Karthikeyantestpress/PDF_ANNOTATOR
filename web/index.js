@@ -11,7 +11,7 @@ function htmlEscape(text) {
 }
 
 const { UI } = PDFJSAnnotate;
-const documentId = 'example.pdf';
+const documentId = 'test.pdf';
 let PAGE_HEIGHT;
 let RENDER_OPTIONS = {
   documentId: documentId,
@@ -136,68 +136,6 @@ render();
   UI.addEventListener('annotation:blur', handleAnnotationBlur);
 })();
 
-// Text stuff
-(function() {
-  let textSize;
-  let textColor;
-
-  function initText() {
-    let size = document.querySelector('.toolbar .text-size');
-    [8, 9, 10, 11, 12, 14, 18, 24, 30, 36, 48, 60, 72, 96].forEach((s) => {
-      size.appendChild(new Option(s, s));
-    });
-
-    setText(
-      localStorage.getItem(`${RENDER_OPTIONS.documentId}/text/size`) || 12,
-      localStorage.getItem(`${RENDER_OPTIONS.documentId}/text/color`) || '#000000'
-    );
-
-    initColorPicker(document.querySelector('.text-color'), textColor, function(value) {
-      setText(textSize, value);
-    });
-  }
-
-  function setText(size, color) {
-    let modified = false;
-
-    if (textSize !== size) {
-      modified = true;
-      textSize = size;
-      localStorage.setItem(`${RENDER_OPTIONS.documentId}/text/size`, textSize);
-      document.querySelector('.toolbar .text-size').value = textSize;
-    }
-
-    if (textColor !== color) {
-      modified = true;
-      textColor = color;
-      localStorage.setItem(`${RENDER_OPTIONS.documentId}/text/color`, textColor);
-
-      let selected = document.querySelector('.toolbar .text-color.color-selected');
-      if (selected) {
-        selected.classList.remove('color-selected');
-        selected.removeAttribute('aria-selected');
-      }
-
-      selected = document.querySelector(`.toolbar .text-color[data-color="${color}"]`);
-      if (selected) {
-        selected.classList.add('color-selected');
-        selected.setAttribute('aria-selected', true);
-      }
-    }
-
-    if (modified) {
-      UI.setText(textSize, textColor);
-    }
-  }
-
-  function handleTextSizeChange(e) {
-    setText(e.target.value, textColor);
-  }
-
-  document.querySelector('.toolbar .text-size').addEventListener('change', handleTextSizeChange);
-
-  initText();
-})();
 
 // Pen stuff
 (function() {
@@ -271,8 +209,10 @@ render();
 
   function setActiveToolbarItem(type, button) {
     let active = document.querySelector('.toolbar button.active');
+    let textLayers = document.querySelectorAll('.textLayer');
     if (active) {
       active.classList.remove('active');
+      textLayers.forEach(textLayer => textLayer.classList.remove('textLayerHighlight'));
 
       switch (tooltype) {
         case 'cursor':
@@ -335,6 +275,7 @@ render();
         break;
       case 'area':
       case 'highlight':
+        textLayers.forEach(textLayer => textLayer.classList.add('textLayerHighlight'));
       case 'strikeout':
         UI.enableRect(type);
         break;
@@ -394,6 +335,8 @@ render();
 (function() {
   function handleClearClick(e) {
     if (confirm('Are you sure you want to clear annotations?')) {
+      const selectedAnnotations = document.querySelectorAll('svg.annotationLayer .selected');
+      selectedAnnotations.innerHTML = '';
       for (let i = 0; i < NUM_PAGES; i++) {
         document.querySelector(`div#pageContainer${i + 1} svg.annotationLayer`).innerHTML = '';
       }
